@@ -1,0 +1,16 @@
+[Unit]
+Description=Starts a process that checks if the process is running.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=monitoring
+Group=monitoring
+ExecStart=/usr/local/bin/proc_monitor test /run/test.pid
+Restart=on-failure
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
