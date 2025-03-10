@@ -8,6 +8,8 @@
 # By: Ilya S. 10 Mar. 2025
 #
 
+set -e
+
 readonly LOG_FILE="/var/log/monitoring.log"
 readonly API_SERVER="https://httpbin.org/post"
 readonly PROCESS="$1"
@@ -47,6 +49,15 @@ send_post() {
          -d '{"process_status":"running"}' &>/dev/null
 }
 
+api_server_is_up() {
+    local host=""
+    host="$(echo "${API_SERVER}" | cut -d/ -f3)"
+    if traceroute -T "${host}" &>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
 main() {
     local log_file_dir=""
     log_file_dir="$(dirname "${LOG_FILE}")"
@@ -73,12 +84,18 @@ main() {
         fi
     fi
 
-    if proc_is_running; then
+    if ! proc_is_running; then
+        exit 1
+    fi
+
+    if api_server_is_up; then
         if ! send_post; then
             log "Error when trying to send a POST request. Server: ${API_SERVER}"
             exit 1
         fi
         log "POST request sent successfully! Server: ${API_SERVER}"
+    else
+        log "Api server is not up! Server: ${API_SERVER}"
     fi
 
     if proc_is_restarted; then
